@@ -16,14 +16,16 @@ const int directionchangedelay = 500;
 const int minchangeeffort = 150;
 const int mineffort = 75;
 int directionchangeeffort = 0;
-int maxthrottle = 1023;
+int maxthrottle = 512;// 1023 for max  // 500 for slow
+int oldthrottle = 0; //holds previous throttle position
+int throttle = 0;
 
 void setup() 
 { 
   myservo.attach(9);  // attaches the servo on pin 9 to the servo object 
 myservo.write(90);
 pinMode(ledPin, OUTPUT);
-Serial.begin(9600);
+Serial.begin(115200);
 digitalWrite(7, HIGH);
 Serial.println("Hello, sending zero calibration pulse");
 delay(1250);
@@ -32,8 +34,26 @@ delay(1250);
  
 void loop() 
 { 
+  oldthrottle = throttle;
   val = analogRead(potpin);            // reads the value of the potentiometer (value between 0 and 1023) 
-    //Serial.println(val);
+    Serial.print("pot ");
+    Serial.print(val);
+    
+  if (val <= oldthrottle) {
+    throttle = val;
+  } else {
+    throttle = oldthrottle + 2;
+    if (throttle > val) { //check to be sure the new throttle value is not over target
+      throttle = val;
+    } else {
+        val= throttle;
+      }
+  }
+  
+    Serial.print(" thr ");
+    Serial.print(throttle);
+    Serial.print(" ");
+
     if (val > threshold) {
       digitalWrite(ledPin, HIGH);
     } 
@@ -54,8 +74,9 @@ void loop()
   if (directionchangeeffort > maxthrottle) {
     directionchangeeffort = maxthrottle;
   }
-  
-  Serial.println(dir);
+ 
+  Serial.print(" dir ");
+  Serial.print(dir);
   val = map(val, 0, 1023, mineffort, directionchangeeffort);
   
   if (dir == 0) {
@@ -66,6 +87,7 @@ void loop()
   
   
   myservo.write(val);                  // sets the servo position according to the scaled value 
+ Serial.print(" val ");
  Serial.println(val);
-  delay(2);                           // waits for the servo to get there 
+  delay(1);                           // waits for the servo to get there 
 }
